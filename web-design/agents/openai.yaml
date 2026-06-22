@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Design"
+  short_description: "Premium Apple/Google-inspired website design guidance."
+  default_prompt: "Use $web-design to design a premium, minimalist website with polished navigation and responsive visual hierarchy."
