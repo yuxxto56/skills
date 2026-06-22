@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Development Standards"
+  short_description: "Backend API, layering, query, and MySQL schema standards."
+  default_prompt: "Use $backend-development-standards to design a backend API, layering, query, and MySQL schema plan."
