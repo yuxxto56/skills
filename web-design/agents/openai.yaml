@@ -1,4 +1,4 @@
 interface:
   display_name: "Web Design"
-  short_description: "Premium Apple/Google-inspired website design guidance."
-  default_prompt: "Use $web-design to design a premium, minimalist website with polished navigation and responsive visual hierarchy."
+  short_description: "Cross-platform premium minimalist design guidance."
+  default_prompt: "Use $web-design to guide a premium, restrained, Apple/Google-inspired design for a website, WeChat mini program, or mobile app."
