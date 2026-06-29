@@ -1,19 +1,22 @@
 ---
 name: backend-development-standards
-description: Use when designing or modifying backend APIs, controller-logic-model layering, BaseController inheritance, validation, response formats, error codes, upload security, performance-sensitive endpoints, multi-table queries, or MySQL table schemas.
+description: Use when designing or modifying backend APIs, controller-logic-model layering, BaseController inheritance, validation, response formats, error codes, upload security, performance-sensitive endpoints, multi-table queries, database initialization checks, or MySQL table schemas.
 ---
 
 # Backend Development Standards
 
 ## Core Rule
 
-Apply these standards before designing or changing backend interfaces, business logic, data access, multi-table queries, uploads, tests, or MySQL schemas. Prefer clear layering, explicit parameters, unified responses, and predictable data access over clever shortcuts.
+Apply these standards before designing or changing backend interfaces, business logic, data access, multi-table queries, uploads, tests, database initialization, or MySQL schemas. Prefer clear layering, explicit parameters, unified responses, and verifiable data access over clever shortcuts.
 
 ## Layering
 
 - Business Controllers must extend `BaseController` or the project's shared Controller base class.
 - Keep shared response handling, exception capture, parameter reading, and basic type conversion in `BaseController`.
-- Controllers only receive parameters one by one, perform basic validation, authorize, call Logic, and return unified responses.
+- Controllers receive request parameters one by one, perform basic validation, authorize, call Logic, and return unified responses.
+- Business Controller action methods must not receive request-context parameters such as `array $body`, `array $query`, `array $request`, `Request $request`, or `int $userId`.
+- Keep business action signatures semantic and context-free, such as `create()`, `save()`, `list()`, and `detail()`.
+- Read authenticated user identity through a shared base method such as `currentUserId()`; do not pass it into business actions as a method parameter.
 - Controllers must not contain complex business decisions, database query assembly, transaction details, or cross-model workflows.
 - Business Controllers must not call low-level response helpers directly or duplicate shared response and exception handling.
 - Keep Logic and Model as sibling layers; do not put Logic inside the Model directory.
@@ -37,6 +40,9 @@ Apply these standards before designing or changing backend interfaces, business 
 - Keep routes explicit, stable, and predictable; avoid fuzzy matching or route-order fallbacks.
 - Separate public and admin APIs clearly by route, name, and authorization boundary.
 - Controllers handle required checks, basic type conversion, string trimming, integer defaults, and simple range checks.
+- Controllers should read each parameter through `BaseController` helpers such as `getRequiredString()`, `postRequiredString()`, `getInt()`, `postInt()`, or project-equivalent methods.
+- In ThinkPHP 6 projects, wrap `think\facade\Request::get()` and `Request::post()` inside `BaseController` or a shared request adapter instead of scattering direct framework calls through every Controller.
+- Local development or test entrypoints may inject fallback request context, but that adapter context must not appear in business Controller action signatures.
 - Logic still validates business validity, such as resource existence, allowed state, and relationship constraints.
 - Repeated validation belongs in `BaseController` or reusable validation utilities.
 - Define error codes centrally and get messages through an error-code mapping.
@@ -58,10 +64,13 @@ Apply these standards before designing or changing backend interfaces, business 
 - Example: query users to get `uid[]`, query orders with `WHERE uid IN (...)`, group orders by `uid`, and merge into user results in Logic.
 - Do not introduce cache early; evaluate cache, object storage, or CDN only after data volume, traffic, or stability issues are proven.
 
-## MySQL Schema Rules
+## MySQL Schema And Initialization Rules
 
 - Use MySQL by default.
 - Maintain table-creation scripts in the project's database script directory.
+- Keep schema scripts and seed scripts separate.
+- Seed scripts should be idempotent where practical, for example by using unique keys plus upsert behavior or a documented equivalent.
+- Projects that require MySQL setup should provide both an initialization script and a health-check script.
 - Use `utf8mb4` and `utf8mb4_unicode_ci`.
 - Use the `InnoDB` engine.
 - Every table needs a clear table comment.
@@ -75,10 +84,23 @@ Apply these standards before designing or changing backend interfaces, business 
 - For related deletes, define foreign-key constraints, cascade strategy, or application-layer delete strategy explicitly.
 - After schema changes, check Models, Logic, API docs, seed data, and tests.
 
+## Database Verification Flow
+
+- Do not treat an API health response as proof that MySQL is connected, tables exist, or seed data is loaded.
+- Verify database readiness before API smoke tests.
+- Database initialization should follow this order: read environment configuration, connect to the MySQL service, check or create the target database, execute schema scripts, execute seed scripts, inspect tables and seed data, then run API smoke tests.
+- Health-check scripts should clearly report `connected`, `database_exists`, `tables_ready`, and `seed_ready`, or project-equivalent status fields.
+- Connection failures must include enough context to debug safely: host, port, database, user, and the driver error message.
+- Classify common database failures when possible: invalid username or password, unreachable host or port, missing target database, insufficient privileges, and SQL execution failure.
+- Do not report initialization as complete when any database readiness check fails.
+
 ## Verification Checklist
 
 - Controller structure tests verify business Controllers inherit the shared base class and do not directly call low-level response helpers.
+- Controller signature tests verify business actions do not accept request-context parameters such as `array $body`, `array $query`, `Request $request`, or `int $userId`.
+- BaseController or shared request-adapter tests verify GET, POST, required, optional, integer, and current-user parameter helpers.
 - Logic layering tests verify Logic does not bypass Model to access database query APIs.
 - Validation tests cover missing required parameters, invalid types, and error responses with `data` as an empty array.
+- Database setup tests or scripts verify service connectivity, target database existence, required tables, and required seed data before API smoke tests run.
 - Tests or static checks cover response shape, error codes, route style, layering rules, multi-table query style, and database constraints.
 - Interface or schema changes update affected frontend requests, backend routes, tests, API docs, and troubleshooting notes where relevant.
