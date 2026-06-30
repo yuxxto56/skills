@@ -1,6 +1,6 @@
 ---
 name: backend-development-standards
-description: Use when designing or modifying backend APIs, controller-logic-model layering, BaseController inheritance, validation, response formats, error codes, upload security, performance-sensitive endpoints, multi-table queries, database initialization checks, or MySQL table schemas.
+description: Use when designing or modifying backend APIs, controller-logic-model layering, BaseController inheritance, validation, response formats, error codes, upload security, performance-sensitive endpoints, multi-table queries, PHP timezone configuration, database initialization checks, or MySQL table schemas.
 ---
 
 # Backend Development Standards
@@ -74,6 +74,8 @@ Apply these standards before designing or changing backend interfaces, business 
 ## MySQL Schema And Initialization Rules
 
 - Use MySQL by default.
+- Configure PHP's default runtime timezone to `Asia/Shanghai` in backend bootstrap or the shared application entry before business code calls `time()`, `date()`, `strtotime()`, or `DateTime`.
+- Keep business time calculations consistent with the configured PHP timezone; if a query needs explicit boundaries, compute them from `DateTimeImmutable` plus `DateTimeZone('Asia/Shanghai')` rather than relying on server defaults.
 - Maintain table-creation scripts in the project's database script directory.
 - Keep schema scripts and seed scripts separate.
 - Seed scripts should be idempotent where practical, for example by using unique keys plus upsert behavior or a documented equivalent.
